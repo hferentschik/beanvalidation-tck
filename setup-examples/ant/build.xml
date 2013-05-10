@@ -10,6 +10,8 @@
 
     <!-- Define source and output directories for the build -->
     <property name="project.build.directory" value="target"/>
+    <property name="project.lib.dir" value="${project.build.directory}/lib"/>
+    <property name="container.home" value="${project.build.directory}/glassfish4"/>
     <property name="project.testResource.directory" value="src/test/resources"/>
     <property name="project.testResource.outputDirectory" value="${project.build.directory}/resources"/>
     <property name="project.test.reportsOutputDirectory" value="${project.build.directory}/test-results"/>
@@ -48,6 +50,12 @@
         <ivy:settings file="${basedir}/ivysettings.xml"/>
     </target>
 
+    <target name="ivy-resolve" depends="load-ivy" description="resolve dependencies with ivy">
+        <ivy:resolve conf="test-incontainer"/>
+        <mkdir dir="${project.lib.dir}"/>
+        <ivy:retrieve pattern="${project.lib.dir}/[artifact].[ext]"/>
+    </target>
+
     <target name="clean-ivy" depends="load-ivy">
         <ivy:cleancache/>
     </target>
@@ -56,7 +64,7 @@
     <!-- Initialization targets                                                 -->
     <!-- ====================================================================== -->
 
-    <target name="init" depends="load-ivy,get-testng-suite">
+    <target name="init" depends="ivy-resolve,get-glassfish,prepare-glassfish,get-testng-suite">
     </target>
 
     <target name="install-testng-jar">
@@ -64,6 +72,26 @@
         <get src="${maven.repo.central}/org/testng/testng/${version.testng}/testng-${version.testng}.jar"
              dest=".lib/testng.jar"
              skipexisting="true"/>
+    </target>
+
+    <target name="get-glassfish">
+        <mkdir dir="${project.build.directory}"/>
+        <get src="http://dlc.sun.com.edgesuite.net/glassfish/4.0/promoted/glassfish-4.0-b88.zip"
+             dest="${project.build.directory}"
+             skipexisting="true"/>
+        <unzip src="${project.build.directory}/glassfish-4.0-b88.zip" dest="${project.build.directory}"/>
+    </target>
+
+    <target name="prepare-glassfish" depends="ivy-resolve">
+        <replace file="${container.home}/glassfish/domains/domain1/config/domain.xml">
+            <replacetoken><![CDATA[</java-config>]]></replacetoken>
+            <replacevalue><![CDATA[ <jvm-options>-Dvalidation.provider=org.hibernate.validator.HibernateValidator</jvm-options>
+            </java-config>]]></replacevalue>
+        </replace>
+        <jar destfile="${container.home}/glassfish/modules/bean-validator.jar" update="true">
+            <zipfileset includes="**/*.class" src="${project.lib.dir}/hibernate-validator.jar"/>
+            <zipfileset includes="**/*.class" src="${project.lib.dir}/hibernate-validator-cdi.jar"/>
+        </jar>
     </target>
 
     <target name="get-testng-suite">
@@ -97,7 +125,6 @@
     <taskdef resource="testngtasks" classpath=".lib/testng.jar"/>
     <target name="test" depends="init,copy-test-resources">
         <mkdir dir="${project.test.reportsOutputDirectory}"/>
-        <ivy:resolve conf="test-incontainer"/>
         <ivy:cachepath pathid="build.test.classpath.container" conf="test-incontainer"/>
         <path id="test.path">
             <path refid="build.test.classpath.container"/>

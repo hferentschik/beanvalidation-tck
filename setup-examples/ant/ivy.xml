@@ -21,7 +21,10 @@
         <dependency org="org.hibernate.beanvalidation.tck" name="beanvalidation-tck-tests" rev="${version.tck}" conf="test->default(*)"/>
 
         <!-- The Arquillian container adapter for the container under test. Specific to the container in which to run the tests -->
-        <dependency org="org.hibernate" name="hibernate-validator" rev="${version.hv}" conf="test->default(*)"/>
+        <dependency org="org.hibernate" name="hibernate-validator" rev="${version.hv}" conf="test->default(*);test->runtime"/>
+        <dependency org="org.hibernate" name="hibernate-validator-cdi" rev="${version.hv}" conf="test->default(*);test->runtime"/>
+        <dependency org="javax.el" name="javax.el-api" rev="2.2.4" conf="test->default(*);test->runtime"/>
+        <dependency org="org.glassfish.web" name="javax.el" rev="2.2.4" conf="test->default(*);test->runtime"/>
         <dependency org="org.jboss.arquillian.container" name="arquillian-glassfish-managed-3.1" rev="1.0.0.Final-SNAPSHOT" conf="test-incontainer->default(*)"/>
     </dependencies>
 </ivy-module>
